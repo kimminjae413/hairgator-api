@@ -5,3 +5,4 @@ langchain
 chromadb
 pydantic
 python-dotenv
+langchain-community
