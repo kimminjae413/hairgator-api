@@ -6,3 +6,6 @@ chromadb
 pydantic
 python-dotenv
 langchain-community
+tiktoken
+
+tiktoken 
