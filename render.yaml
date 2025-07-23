@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: hairgator-api
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn hairgator_enhanced_v6_emoji_supported:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY  
+        sync: false
+      - key: REDIS_URL
+        value: redis://localhost:6379

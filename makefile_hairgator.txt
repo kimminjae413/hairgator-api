@@ -1,0 +1,214 @@
+# Makefile for Hairgator System v5.0
+# 개발 및 배포를 위한 편의 명령어
+
+.PHONY: help install dev test build deploy clean logs restart status
+
+# 기본 설정
+PYTHON := python3
+PIP := pip3
+DOCKER_COMPOSE := docker-compose
+
+# 색상 출력
+RED := \033[0;31m
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+BLUE := \033[0;34m
+NC := \033[0m
+
+# 기본 타겟
+help: ## 사용 가능한 명령어 표시
+	@echo "🎨 헤어게이터 시스템 v5.0 - 개발 도구"
+	@echo ""
+	@echo "사용 가능한 명령어:"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  ${BLUE}%-15s${NC} %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo ""
+
+# 개발 환경 설정
+install: ## Python 의존성 설치
+	@echo "${BLUE}📦 Python 의존성 설치 중...${NC}"
+	$(PIP) install -r requirements_v5.txt
+	@echo "${GREEN}✅ 의존성 설치 완료${NC}"
+
+install-dev: ## 개발용 의존성 추가 설치
+	@echo "${BLUE}📦 개발용 의존성 설치 중...${NC}"
+	$(PIP) install -r requirements_v5.txt
+	$(PIP) install pytest pytest-asyncio black flake8 mypy
+	@echo "${GREEN}✅ 개발용 의존성 설치 완료${NC}"
+
+setup: ## 초기 환경 설정
+	@echo "${BLUE}🔧 초기 환경 설정 중...${NC}"
+	mkdir -p static/temp logs ssl
+	chmod 755 static static/temp
+	@if [ ! -f .env ]; then \
+		echo "${YELLOW}⚠️ .env 파일이 없습니다. env_setup_v5.sh를 참고하여 생성하세요.${NC}"; \
+		cp env_setup_v5.sh .env.example; \
+	fi
+	@echo "${GREEN}✅ 환경 설정 완료${NC}"
+
+# 개발 서버
+dev: ## 개발 서버 시작 (Hot reload)
+	@echo "${BLUE}🚀 개발 서버 시작 중...${NC}"
+	$(PYTHON) -m uvicorn hairgator_integrated_v5:app --host 0.0.0.0 --port 8000 --reload
+
+dev-redis: ## Redis와 함께 개발 서버 시작
+	@echo "${BLUE}🚀 Redis와 개발 서버 시작 중...${NC}"
+	@if ! pgrep redis-server > /dev/null; then \
+		echo "${YELLOW}Redis 시작 중...${NC}"; \
+		redis-server --daemonize yes; \
+	fi
+	$(PYTHON) hairgator_integrated_v5.py
+
+# 테스트
+test: ## API 테스트 실행
+	@echo "${BLUE}🧪 API 테스트 실행 중...${NC}"
+	$(PYTHON) test_hairgator_api.py
+
+test-unit: ## 단위 테스트 실행 (pytest)
+	@echo "${BLUE}🧪 단위 테스트 실행 중...${NC}"
+	pytest tests/ -v
+
+test-health: ## 헬스 체크만 테스트
+	@echo "${BLUE}💓 헬스 체크 테스트 중...${NC}"
+	$(PYTHON) test_hairgator_api.py --test health
+
+test-chat: ## 채팅 기능만 테스트
+	@echo "${BLUE}💬 채팅 기능 테스트 중...${NC}"
+	$(PYTHON) test_hairgator_api.py --test chat
+
+test-image: ## 이미지 분석만 테스트
+	@echo "${BLUE}🖼️ 이미지 분석 테스트 중...${NC}"
+	$(PYTHON) test_hairgator_api.py --test image
+
+# 코드 품질
+lint: ## 코드 린팅 (flake8)
+	@echo "${BLUE}🔍 코드 린팅 중...${NC}"
+	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+	flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+format: ## 코드 포맷팅 (black)
+	@echo "${BLUE}🎨 코드 포맷팅 중...${NC}"
+	black .
+
+type-check: ## 타입 체크 (mypy)
+	@echo "${BLUE}🔍 타입 체크 중...${NC}"
+	mypy . --ignore-missing-imports
+
+# Docker 관련
+build: ## Docker 이미지 빌드
+	@echo "${BLUE}🐳 Docker 이미지 빌드 중...${NC}"
+	$(DOCKER_COMPOSE) build
+
+deploy: ## 전체 시스템 배포
+	@echo "${BLUE}🚀 시스템 배포 중...${NC}"
+	./deploy.sh
+
+up: ## Docker Compose로 서비스 시작
+	@echo "${BLUE}⬆️ 서비스 시작 중...${NC}"
+	$(DOCKER_COMPOSE) up -d
+
+down: ## Docker Compose로 서비스 중지
+	@echo "${BLUE}⬇️ 서비스 중지 중...${NC}"
+	$(DOCKER_COMPOSE) down
+
+restart: ## 서비스 재시작
+	@echo "${BLUE}🔄 서비스 재시작 중...${NC}"
+	$(DOCKER_COMPOSE) restart
+
+logs: ## 로그 확인
+	@echo "${BLUE}📋 로그 확인 중...${NC}"
+	$(DOCKER_COMPOSE) logs -f
+
+status: ## 서비스 상태 확인
+	@echo "${BLUE}📊 서비스 상태 확인 중...${NC}"
+	$(DOCKER_COMPOSE) ps
+
+# 유지보수
+clean: ## 임시 파일 및 캐시 정리
+	@echo "${BLUE}🧹 임시 파일 정리 중...${NC}"
+	find . -type f -name "*.pyc" -delete
+	find . -type d -name "__pycache__" -delete
+	find . -type d -name "*.egg-info" -exec rm -rf {} +
+	rm -rf .pytest_cache .mypy_cache .coverage htmlcov/
+	@echo "${GREEN}✅ 정리 완료${NC}"
+
+clean-docker: ## Docker 리소스 정리
+	@echo "${BLUE}🐳 Docker 리소스 정리 중...${NC}"
+	$(DOCKER_COMPOSE) down --volumes --rmi all
+	docker system prune -af
+	@echo "${GREEN}✅ Docker 정리 완료${NC}"
+
+clean-all: clean clean-docker ## 모든 임시 파일 및 Docker 리소스 정리
+	@echo "${GREEN}✅ 전체 정리 완료${NC}"
+
+# SSL 인증서
+ssl-cert: ## 개발용 SSL 인증서 생성
+	@echo "${BLUE}🔐 SSL 인증서 생성 중...${NC}"
+	@mkdir -p ssl
+	openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+		-keyout ssl/server.key \
+		-out ssl/server.crt \
+		-subj "/C=KR/ST=Seoul/L=Seoul/O=Hairgator/CN=localhost"
+	@echo "${GREEN}✅ SSL 인증서 생성 완료${NC}"
+
+# 백업 및 복원
+backup: ## 데이터 백업
+	@echo "${BLUE}💾 데이터 백업 중...${NC}"
+	@mkdir -p backups
+	@DATE=$$(date +%Y%m%d_%H%M%S); \
+	tar -czf "backups/hairgator_backup_$$DATE.tar.gz" \
+		static/ logs/ .env 헤어게이터\ 스타일\ 메뉴\ 텍스트_women_rag_v2.xlsx || true
+	@echo "${GREEN}✅ 백업 완료 - backups/ 폴더 확인${NC}"
+
+# 모니터링
+monitor: ## 시스템 리소스 모니터링
+	@echo "${BLUE}📊 시스템 리소스 모니터링${NC}"
+	@echo "Docker 컨테이너 상태:"
+	$(DOCKER_COMPOSE) ps
+	@echo ""
+	@echo "Docker 리소스 사용량:"
+	docker stats --no-stream
+	@echo ""
+	@echo "Redis 상태:"
+	@redis-cli ping 2>/dev/null || echo "Redis 연결 실패"
+
+# 개발 도구
+shell: ## 애플리케이션 컨테이너 셸 접속
+	@echo "${BLUE}🐚 컨테이너 셸 접속 중...${NC}"
+	$(DOCKER_COMPOSE) exec hairgator-app /bin/bash
+
+redis-cli: ## Redis CLI 접속
+	@echo "${BLUE}🔄 Redis CLI 접속 중...${NC}"
+	$(DOCKER_COMPOSE) exec redis redis-cli
+
+# 업데이트
+update-deps: ## 의존성 업데이트
+	@echo "${BLUE}⬆️ 의존성 업데이트 중...${NC}"
+	$(PIP) list --outdated
+	$(PIP) freeze > requirements_backup.txt
+	@echo "${YELLOW}requirements_backup.txt에 현재 의존성을 백업했습니다.${NC}"
+
+# 프로덕션 배포
+prod-deploy: ## 프로덕션 배포 (주의!)
+	@echo "${RED}⚠️ 프로덕션 배포를 시작합니다!${NC}"
+	@read -p "계속하시겠습니까? [y/N]: " confirm && [ $$confirm = y ]
+	@echo "${BLUE}🚀 프로덕션 배포 중...${NC}"
+	ENVIRONMENT=production $(DOCKER_COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+	@echo "${GREEN}✅ 프로덕션 배포 완료${NC}"
+
+# 빠른 명령어 별칭
+dev-quick: setup dev-redis ## 빠른 개발 환경 시작
+
+all-tests: test test-unit ## 모든 테스트 실행
+
+full-deploy: clean build deploy test ## 전체 배포 플로우
+
+# 정보 표시
+info: ## 시스템 정보 표시
+	@echo "${BLUE}🎨 헤어게이터 시스템 v5.0${NC}"
+	@echo "Python: $$($(PYTHON) --version)"
+	@echo "Docker: $$(docker --version)"
+	@echo "Docker Compose: $$($(DOCKER_COMPOSE) --version)"
+	@echo "Redis: $$(redis-server --version | head -1)"
+	@echo ""
+	@echo "프로젝트 구조:"
+	@tree -L 2 -I '__pycache__|*.pyc|.git' . || ls -la
