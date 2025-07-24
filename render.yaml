@@ -3,8 +3,15 @@ services:
     name: hairgator-api
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn hairgator_enhanced_v6_emoji_supported:app --host 0.0.0.0 --port $PORT
+    # Python 버전 명시
+    runtime: python-3.11.0
+    # 빌드 명령어
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    # 🔧 수정된 시작 명령어 (정확한 파일명)
+    startCommand: python hairgator_fixed_v75.py
+    # 환경 변수
     envVars:
       - key: OPENAI_API_KEY
         sync: false
@@ -12,3 +19,7 @@ services:
         sync: false
       - key: REDIS_URL
         value: redis://localhost:6379
+    # 헬스 체크
+    healthCheckPath: /health
+    # 자동 배포
+    autoDeploy: true6379

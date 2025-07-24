@@ -1575,80 +1575,51 @@ async def on_startup():
 if __name__ == "__main__":
     import uvicorn
     
-    print("\n🎨 헤어게이터 통합 시스템 v7.5 - Syntax Error Fixed 시작...")
+    print("\n🎨 헤어게이터 통합 시스템 v7.5 - Render 배포")
     print("🔧 v7.5 문법 오류 완전 해결:")
-    print("   - 모든 문법 오류 완전 해결 (1224번째 줄 특수문자 등)")
-    print("   - 들여쓰기 오류 완전 수정")
-    print("   - UTF-8 인코딩 강화")
-    print("   - 실행 가능한 완전한 단일 파일")
-    print("   - 모든 함수 완전 구현")
-    print("   - 패키지 의존성 체크 및 처리")
-    print("🔥 핵심 기능:")
-    print("   - 헤어디자이너 전용 컨텍스트 감지")
-    print("   - 56파라미터 완전 분석")
-    print("   - Claude 이미지 분석 + GPT 전문 응답")
-    print("   - RAG 데이터베이스 통합")
-    print("   - 실무 적용 가능한 상세 가이드")
+    print("   - 모든 문법 오류 완전 해결")
+    print("   - 렌더 환경 최적화")
+    print("   - 포트 바인딩 수정")
     
-    port = int(os.environ.get("PORT", 8000))
+    # 렌더 환경 감지 및 포트 설정
+    port = int(os.environ.get("PORT", 8000))  # 렌더는 PORT 환경변수 제공
+    host = "0.0.0.0"  # 반드시 0.0.0.0으로 설정
     
-    print(f"\n🚀 서버 시작: 포트 {port}")
-    print(f"📋 API 문서: http://localhost:{port}/docs")
-    print(f"💯 Ground Truth 품질 목표: 97점 이상")
-    print(f"🔧 56파라미터 테스트: http://localhost:{port}/test-56-parameters")
-    print(f"🏥 헬스 체크: http://localhost:{port}/health")
-    print(f"📤 이미지 업로드 테스트: http://localhost:{port}/temp-upload")
-    print(f"✅ 모든 문법 오류 해결 완료 - 파이썬에서 바로 실행 가능!")
+    print(f"\n🚀 렌더 배포 서버 시작:")
+    print(f"   Host: {host}")
+    print(f"   Port: {port}")
+    print(f"   OpenAI: {'✅ 설정됨' if OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_key_here' else '❌ 미설정'}")
+    print(f"   Anthropic: {'✅ 설정됨' if anthropic_client else '❌ 미설정'}")
+    print(f"   Redis: {'메모리모드' if not redis_available else '연결됨'}")
+    print(f"   RAG 스타일: {len(rag_db.styles_data)}개")
     
     if not OPENAI_API_KEY or OPENAI_API_KEY == 'your_openai_key_here':
-        print("\n⚠️ 경고: OpenAI API 키가 설정되지 않았습니다!")
-        print("   .env 파일을 생성하고 OPENAI_API_KEY를 설정하세요.")
+        print("\n⚠️ 경고: OpenAI API 키가 렌더 환경변수에 설정되지 않았습니다!")
+        print("   Render Dashboard → Environment → OPENAI_API_KEY 설정 필요")
     
     if not anthropic_client:
-        print("\n⚠️ 경고: Anthropic API 키가 설정되지 않았습니다!")
-        print("   .env 파일에서 ANTHROPIC_API_KEY를 설정하세요.")
+        print("\n⚠️ 경고: Anthropic API 키가 렌더 환경변수에 설정되지 않았습니다!")
+        print("   Render Dashboard → Environment → ANTHROPIC_API_KEY 설정 필요")
     
-    print("\n🎯 사용법:")
-    print("1. 필요한 패키지 설치:")
-    print("   pip install fastapi uvicorn openai anthropic pandas python-dotenv redis pillow requests pydantic")
-    print("2. .env 파일 생성:")
-    print("   OPENAI_API_KEY=your_openai_api_key_here")
-    print("   ANTHROPIC_API_KEY=your_anthropic_api_key_here")
-    print("3. 실행:")
-    print("   python hairgator_fixed_v75.py")
-    print("4. API 테스트:")
-    print("   http://localhost:8000/docs 에서 Swagger UI 확인")
+    print(f"\n📋 API 엔드포인트:")
+    print(f"   • API 문서: https://your-app.onrender.com/docs")
+    print(f"   • 헬스 체크: https://your-app.onrender.com/health")
+    print(f"   • 56파라미터 테스트: https://your-app.onrender.com/test-56-parameters")
     
-    print(f"\n📊 시스템 상태:")
-    print(f"   Redis: {'연결됨' if redis_available else '메모리 모드'}")
-    print(f"   OpenAI: {'설정됨' if OPENAI_API_KEY and OPENAI_API_KEY != 'your_openai_key_here' else '미설정'}")
-    print(f"   Claude: {'설정됨' if anthropic_client else '미설정'}")
-    print(f"   RAG 스타일: {len(rag_db.styles_data)}개")
-    print(f"   전문가 키워드: {len(professional_context.professional_hair_keywords)}개")
-    
-    uvicorn.run(
-        app, 
-        host="0.0.0.0", 
-        port=port,
-        access_log=True,
-        log_config={
-            "version": 1,
-            "disable_existing_loggers": False,
-            "formatters": {
-                "default": {
-                    "format": "%(asctime)s - %(levelname)s - %(message)s",
-                },
-            },
-            "handlers": {
-                "default": {
-                    "formatter": "default",
-                    "class": "logging.StreamHandler",
-                    "stream": "ext://sys.stdout",
-                },
-            },
-            "root": {
-                "level": "INFO",
-                "handlers": ["default"],
-            },
-        }
-    ) 
+    try:
+        uvicorn.run(
+            app, 
+            host=host,
+            port=port,
+            log_level="info",
+            access_log=True,
+            # 렌더 최적화 설정
+            workers=1,
+            timeout_keep_alive=30,
+            limit_concurrency=10
+        )
+    except Exception as e:
+        print(f"❌ 서버 시작 실패: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
