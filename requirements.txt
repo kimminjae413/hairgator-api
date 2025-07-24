@@ -1,30 +1,30 @@
-# 렌더 최적화 requirements.txt
-# 버전을 메인 파일과 일치시킴
+# 🔥 헤어게이터 완전 오류 해결 requirements.txt
 
-# 웹 프레임워크 (필수)
+# Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 
-# 환경 설정
+# Environment & Configuration
 python-dotenv==1.0.0
 
-# AI 서비스 (핵심)
+# AI APIs
 openai==1.3.0
 anthropic==0.7.8
 
-# 이미지 처리 (필수)
-Pillow==10.1.0
+# Image Processing (Render 최적화)
+Pillow>=10.2.0
 
-# 데이터 처리 (필수)  
-pandas==2.1.3
-openpyxl==3.1.2
+# Data Processing
+pandas>=2.0.0
+requests>=2.31.0
 
-# HTTP 클라이언트
-requests==2.31.0
+# Database & Caching
+redis>=5.0.0
 
-# 파일 처리
-python-multipart==0.0.6
+# File Handling
+aiofiles>=23.0.0
 
-# Redis (메모리 모드로 폴백 가능)
-redis==5.0.1
+# Additional Dependencies
+typing-extensions>=4.8.0
+asyncio-mqtt>=0.13.0
