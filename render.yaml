@@ -10,7 +10,7 @@ services:
       pip install --upgrade pip
       pip install -r requirements.txt
     # 🔧 수정된 시작 명령어 (정확한 파일명)
-    startCommand: python hairgator_fixed_v75.py
+    startCommand: python simple_test.py
     # 환경 변수
     envVars:
       - key: OPENAI_API_KEY
