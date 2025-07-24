@@ -48,3 +48,16 @@ ssl/
 
 # 임시 파일
 static/temp/
+
+# 추가 권장사항
+# 테스트 관련
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 배포 관련
+.docker/
+docker-compose.override.yml
