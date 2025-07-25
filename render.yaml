@@ -3,15 +3,12 @@ services:
     name: hairgator-api
     env: python
     plan: free
-    # Python 버전 명시
     runtime: python-3.11.0
-    # 빌드 명령어
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements.txt
-    # 🔧 수정된 시작 명령어 (정확한 파일명)
-    startCommand: python simple_render_test.py
-    # 환경 변수
+    # ✅ 올바른 파일명으로 수정!
+    startCommand: python hairgator_fixed_v75.py
     envVars:
       - key: OPENAI_API_KEY
         sync: false
@@ -19,7 +16,7 @@ services:
         sync: false
       - key: REDIS_URL
         value: redis://localhost:6379
-    # 헬스 체크
+      - key: PORT
+        value: 8000
     healthCheckPath: /health
-    # 자동 배포
-    autoDeploy: true6379
+    autoDeploy: true
