@@ -998,57 +998,62 @@ Cut Categories: Women's Cut, Men's Cut, Unisex Cut
 # =============================================================================
 
 async def generate_streaming_professional_response(request: ChatRequest):
-    """스트리밍 방식으로 56파라미터 전문가 분석 생성"""
+    """스트리밍 방식으로 56파라미터 전문가 분석 생성 - JSON 오류 수정"""
     
     user_message = request.message or "헤어스타일 분석 요청"
     image_url = request.image_url
     
     try:
         # 🚀 1단계: 즉시 시작 응답 (1초 이내)
-        yield f"data: {json.dumps({
+        start_data = {
             'type': 'start',
             'message': '🎨 헤어게이터 56파라미터 전문 분석을 시작합니다...',
             'timestamp': time.time(),
             'progress': 5
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(start_data, ensure_ascii=False)}\n\n"
         
         await asyncio.sleep(0.5)
         
         # 🖼️ 2단계: 이미지 분석 (있는 경우)
         claude_analysis = None
         if image_url and is_valid_url(image_url):
-            yield f"data: {json.dumps({
-                'type': 'progress', 
+            progress_data = {
+                'type': 'progress',
                 'message': '📸 이미지 분석 중... Claude API 호출',
                 'progress': 15
-            }, ensure_ascii=False)}\n\n"
+            }
+            yield f"data: {json.dumps(progress_data, ensure_ascii=False)}\n\n"
             
             try:
                 # 이미지 다운로드 및 분석 (시뮬레이션)
                 await asyncio.sleep(2)
                 claude_analysis = "이미지 분석 완료: 미디움 레이어드 스타일, 자연스러운 웨이브"
                 
-                yield f"data: {json.dumps({
+                image_complete_data = {
                     'type': 'image_complete',
                     'message': '✅ 이미지 분석 완료',
                     'data': claude_analysis[:100] + "..." if len(claude_analysis) > 100 else claude_analysis,
                     'progress': 25
-                }, ensure_ascii=False)}\n\n"
+                }
+                yield f"data: {json.dumps(image_complete_data, ensure_ascii=False)}\n\n"
                 
             except Exception as e:
                 claude_analysis = f"이미지 분석 오류: {str(e)}"
-                yield f"data: {json.dumps({
+                error_data = {
                     'type': 'error',
                     'message': '⚠️ 이미지 분석 실패, 텍스트 분석으로 진행',
                     'progress': 25
-                }, ensure_ascii=False)}\n\n"
+                }
+                yield f"data: {json.dumps(error_data, ensure_ascii=False)}\n\n"
         
         # 🔍 3단계: RAG 데이터베이스 검색
-        yield f"data: {json.dumps({
+        rag_progress_data = {
             'type': 'progress',
             'message': '🔍 헤어스타일 데이터베이스 검색 중...',
             'progress': 35
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(rag_progress_data, ensure_ascii=False)}\n\n"
         
         await asyncio.sleep(1)
         similar_styles = rag_db.search_similar_styles(user_message, limit=2)
@@ -1056,22 +1061,21 @@ async def generate_streaming_professional_response(request: ChatRequest):
         if similar_styles:
             rag_context = f"참고 스타일 {len(similar_styles)}개 발견"
             
-        yield f"data: {json.dumps({
+        rag_complete_data = {
             'type': 'rag_complete',
             'message': '📚 관련 스타일 데이터 수집 완료',
             'data': f"발견된 유사 스타일: {len(similar_styles)}개",
             'progress': 45
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(rag_complete_data, ensure_ascii=False)}\n\n"
         
         # 🎯 4단계: 56파라미터 분석 시작
-        yield f"data: {json.dumps({
+        analysis_start_data = {
             'type': 'progress',
             'message': '🧬 56파라미터 전문 분석 시작...',
             'progress': 55
-        }, ensure_ascii=False)}\n\n"
-        
-        # 메시지 구성
-        conversation_history = [ChatMessage(role="user", content=user_message)]
+        }
+        yield f"data: {json.dumps(analysis_start_data, ensure_ascii=False)}\n\n"
         
         # GPT 분석을 청크 단위로 스트리밍 (시뮬레이션)
         analysis_parts = []
@@ -1085,11 +1089,12 @@ async def generate_streaming_professional_response(request: ChatRequest):
 
         analysis_parts.append(basic_info)
         
-        yield f"data: {json.dumps({
+        chunk1_data = {
             'type': 'analysis_chunk',
             'content': basic_info,
             'progress': 65
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(chunk1_data, ensure_ascii=False)}\n\n"
         
         await asyncio.sleep(1)
         
@@ -1104,11 +1109,12 @@ async def generate_streaming_professional_response(request: ChatRequest):
 
         analysis_parts.append(params_part1)
         
-        yield f"data: {json.dumps({
+        chunk2_data = {
             'type': 'analysis_chunk',
             'content': params_part1,
             'progress': 75
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(chunk2_data, ensure_ascii=False)}\n\n"
         
         await asyncio.sleep(1)
         
@@ -1123,11 +1129,12 @@ async def generate_streaming_professional_response(request: ChatRequest):
 
         analysis_parts.append(params_part2)
         
-        yield f"data: {json.dumps({
+        chunk3_data = {
             'type': 'analysis_chunk',
             'content': params_part2,
             'progress': 85
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(chunk3_data, ensure_ascii=False)}\n\n"
         
         await asyncio.sleep(1)
         
@@ -1153,33 +1160,38 @@ async def generate_streaming_professional_response(request: ChatRequest):
 
         analysis_parts.append(styling_params)
         
-        yield f"data: {json.dumps({
+        chunk4_data = {
             'type': 'analysis_chunk',
             'content': styling_params,
             'progress': 95
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(chunk4_data, ensure_ascii=False)}\n\n"
         
         # 📋 최종 완성된 분석 결과
         complete_analysis = "".join(analysis_parts)
         
-        yield f"data: {json.dumps({
+        # JSON 안전하게 처리
+        final_data = {
             'type': 'complete',
             'message': '🎯 56파라미터 전문 분석이 완료되었습니다!',
             'data': {
-                'full_analysis': complete_analysis,
+                'full_analysis': complete_analysis.replace('"', '\\"').replace('\n', '\\n'),
                 'parameter_count': 56,
                 'analysis_type': 'professional_streaming',
                 'timestamp': datetime.now().isoformat()
             },
             'progress': 100
-        }, ensure_ascii=False)}\n\n"
+        }
+        
+        yield f"data: {json.dumps(final_data, ensure_ascii=False)}\n\n"
         
     except Exception as e:
-        yield f"data: {json.dumps({
+        error_data = {
             'type': 'error',
             'message': f'❌ 분석 중 오류 발생: {str(e)}',
             'error': str(e)
-        }, ensure_ascii=False)}\n\n"
+        }
+        yield f"data: {json.dumps(error_data, ensure_ascii=False)}\n\n"
 
 def clean_gpt_response(response_text: str) -> str:
     """GPT 응답에서 JSON 블록 완전 제거 및 파라미터 값 검증"""
