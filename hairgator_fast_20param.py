@@ -73,13 +73,16 @@ except ImportError:
 try:
     import anthropic
     if ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != 'your_anthropic_key_here':
-        anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        # 단순하게 초기화 (추가 파라미터 제거)
+        anthropic_client = anthropic.Anthropic(
+            api_key=ANTHROPIC_API_KEY
+        )
         print("✅ Anthropic API 클라이언트 설정 완료")
     else:
         anthropic_client = None
         print("❌ Anthropic API 키가 설정되지 않음")
-except ImportError:
-    print("❌ Anthropic 패키지가 설치되지 않음")
+except Exception as e:
+    print(f"❌ Anthropic 패키지 오류: {e}")
     anthropic_client = None
 
 # Redis 클라이언트 초기화
