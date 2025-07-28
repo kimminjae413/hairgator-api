@@ -741,4 +741,4 @@ async def analyze_image_with_claude_fast(image_data: bytes, user_message: str = 
 → 분배: [자연 낙하/이동/수직]
 → 컷 카테고리: [여성/남성 컷]
 
-간결하고 정확하게 분석해주세요.
+간결하고 정확하게 분석해주세요."""
