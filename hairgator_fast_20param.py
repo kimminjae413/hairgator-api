@@ -73,9 +73,8 @@ except ImportError:
 try:
     import anthropic
     if ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != 'your_anthropic_key_here':
-        # Anthropic 0.3.11 실제 방식
-        anthropic.api_key = ANTHROPIC_API_KEY
-        anthropic_client = anthropic
+        # Anthropic 0.20.0 안정 방식
+        anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         print("✅ Anthropic API 클라이언트 설정 완료")
     else:
         anthropic_client = None
@@ -710,8 +709,6 @@ async def analyze_image_with_claude_fast(image_data: bytes, user_message: str = 
         return "Claude API 설정 필요"
     
     try:
-        image_base64 = base64.b64encode(image_data).decode('utf-8')
-        
         print("🧠 Claude 고속 분석 시작...")
         
         fast_prompt = f"""
@@ -746,30 +743,30 @@ async def analyze_image_with_claude_fast(image_data: bytes, user_message: str = 
 """
 
         message = anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=1200,
-            messages=[
+    model="claude-3-sonnet-20240229",
+    max_tokens=1200,
+    messages=[
+        {
+            "role": "user",
+            "content": [
                 {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": image_base64
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": fast_prompt
-                        }
-                    ]
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": image_base64
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": fast_prompt
                 }
             ]
-        )
+        }
+    ]
+)
         
-        result = message.content[0].text
+        result = response['completion']
         print("✅ Claude 고속 분석 완료!")
         return result
         
