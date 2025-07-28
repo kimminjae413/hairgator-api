@@ -73,8 +73,8 @@ except ImportError:
 try:
     import anthropic
     if ANTHROPIC_API_KEY and ANTHROPIC_API_KEY != 'your_anthropic_key_here':
-        # 단순하게 초기화 (추가 파라미터 제거)
-        anthropic_client = anthropic.Anthropic(
+        # Anthropic 0.18.1 호환 방식
+        anthropic_client = anthropic.Client(
             api_key=ANTHROPIC_API_KEY
         )
         print("✅ Anthropic API 클라이언트 설정 완료")
