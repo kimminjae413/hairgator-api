@@ -709,6 +709,9 @@ async def analyze_image_with_claude_fast(image_data: bytes, user_message: str = 
         return "Claude API 설정 필요"
     
     try:
+        # ★★★ 핵심 수정: image_base64 변수 정의 추가 ★★★
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        
         print("🧠 Claude 고속 분석 시작...")
         
         fast_prompt = f"""
@@ -743,30 +746,30 @@ async def analyze_image_with_claude_fast(image_data: bytes, user_message: str = 
 """
 
         message = anthropic_client.messages.create(
-    model="claude-3-sonnet-20240229",
-    max_tokens=1200,
-    messages=[
-        {
-            "role": "user",
-            "content": [
+            model="claude-3-sonnet-20240229",
+            max_tokens=1200,
+            messages=[
                 {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": image_base64
-                    }
-                },
-                {
-                    "type": "text",
-                    "text": fast_prompt
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": "image/jpeg",
+                                "data": image_base64
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": fast_prompt
+                        }
+                    ]
                 }
             ]
-        }
-    ]
-)
+        )
         
-        result = response['completion']
+        result = message.content[0].text
         print("✅ Claude 고속 분석 완료!")
         return result
         
