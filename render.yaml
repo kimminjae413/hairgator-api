@@ -3,19 +3,18 @@ services:
     name: hairgator-api
     env: python
     plan: free
-    runtime: python-3.11.0
+    runtime: python-3.11.9
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements.txt
-    # ✅ 올바른 파일명으로 수정!
-    startCommand: python hairgator_fixed_v75.py
+    startCommand: python hairgator_fast_20param_claude.py
     envVars:
       - key: OPENAI_API_KEY
         sync: false
       - key: ANTHROPIC_API_KEY  
         sync: false
       - key: REDIS_URL
-        value: redis://localhost:6379
+        value: ""
       - key: PORT
         value: 8000
     healthCheckPath: /health
