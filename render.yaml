@@ -7,6 +7,7 @@ services:
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements.txt
+    # ✅ 정확한 파일명으로 수정
     startCommand: python hairgator_fast_20param_claude.py
     envVars:
       - key: OPENAI_API_KEY
