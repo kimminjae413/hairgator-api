@@ -61,11 +61,111 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 # HTML 프론트엔드 - 기존 디자인 100% 유지
 # =============================================================================
 
-HTML_CONTENT = """
-<!DOCTYPE html>
+HTML_CONTENT = """<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>헤어게이터 - AI 헤어 상담</title>
-    <link rel="icon" type="image/png" href="data:image/png;base64,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" />
+    <style>
+        body { 
+            font-family: 'Noto Sans KR', sans-serif; 
+            background: #f8f9fa; 
+            margin: 0;
+            padding: 20px;
+        }
+        .chat-container { 
+            height: 90vh; 
+            display: flex; 
+            flex-direction: column; 
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #FF1493;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+        #messageInput {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #FF1493 0%, #C21E56 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .user-message {
+            background: #FF1493;
+            color: white;
+            text-align: right;
+        }
+        .bot-message {
+            background: #f1f1f1;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>헤어게이터 💇‍♀️</h1>
+        <div id="messages">
+            <div class="message bot-message">안녕하세요! 헤어게이터 AI입니다. 헤어 스타일에 대해 물어보세요!</div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="messageInput" placeholder="메시지를 입력하세요..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">전송</button>
+        </div>
+    </div>
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const messages = document.getElementById('messages');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // 사용자 메시지 표시
+            messages.innerHTML += `<div class="message user-message">${message}</div>`;
+            input.value = '';
+            
+            // 봇 응답 (간단 버전)
+            messages.innerHTML += `<div class="message bot-message">죄송합니다. 현재 AI 연결 설정 중입니다. 곧 정상 서비스가 제공될 예정입니다! 🚀</div>`;
+            
+            messages.scrollTop = messages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+"""
