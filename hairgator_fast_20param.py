@@ -213,25 +213,30 @@ HTML_TEMPLATE = '''
             }
             
             .input-container {
-                padding: 10px 12px;
-                padding-bottom: 10px;
+                padding: 6px 8px;
+                padding-bottom: 6px;
+                border-radius: 0;
             }
             
-            /* 키보드 활성화 시 브라우저 UI 완전 숨김 */
+            /* 키보드 활성화 시 입력창을 키보드에 딱 붙임 */
             .keyboard-active {
                 height: 100vh;
                 overflow: hidden;
             }
             
             .keyboard-active .input-container {
-                padding-bottom: 6px;
+                padding: 6px 8px;
+                padding-bottom: 4px;
                 position: fixed;
                 bottom: 0;
+                margin: 0;
+                transform: none;
             }
             
-            /* iOS Safari 하단 바 숨김 */
+            /* 키보드와 입력창 사이 공간 제거 */
             .keyboard-active body {
                 padding-bottom: 0;
+                margin-bottom: 0;
             }
         }
         
@@ -331,7 +336,7 @@ HTML_TEMPLATE = '''
         }
         
         .input-container {
-            padding: 12px 16px;
+            padding: 8px 12px;
             background: white;
             border-top: 1px solid #e9ecef;
             position: fixed;
@@ -339,18 +344,22 @@ HTML_TEMPLATE = '''
             left: 0;
             right: 0;
             z-index: 1000;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
+            margin: 0;
         }
         
-        /* 키보드 활성화 시 하단 메뉴 완전 숨김 */
+        /* 키보드 활성화 시 최적화 */
         .keyboard-active .input-container {
+            padding: 8px 12px;
             padding-bottom: 8px;
             transform: translateY(0);
+            bottom: 0;
+            margin: 0;
         }
         
-        /* 채팅 컨테이너에 하단 여백 추가 (입력창 공간 확보) */
+        /* 채팅 컨테이너 하단 여백 최소화 */
         .chat-container {
-            padding-bottom: 80px; /* 입력창 높이만큼 여백 */
+            padding-bottom: 70px; /* 입력창 높이만큼만 */
         }
         
         .input-group {
@@ -492,18 +501,26 @@ HTML_TEMPLATE = '''
                     document.documentElement.classList.add('keyboard-active');
                     document.body.classList.add('keyboard-active');
                     
-                    // 키보드 높이만큼 입력창 위치 조정
+                    // 입력창을 키보드 바로 위에 고정
                     const inputContainer = document.querySelector('.input-container');
                     if (inputContainer) {
                         inputContainer.style.bottom = '0px';
                         inputContainer.style.position = 'fixed';
+                        inputContainer.style.margin = '0';
+                        inputContainer.style.paddingBottom = '4px';
                     }
                     
-                    // 뷰포트 크기에 맞춰 컨테이너 조정
+                    // 컨테이너 높이를 뷰포트에 맞춤
                     const container = document.querySelector('.container');
                     if (container) {
-                        container.style.height = currentHeight + 'px';
+                        container.style.height = '100vh';
+                        container.style.paddingBottom = '0';
                     }
+                    
+                    // body와 html의 여백 완전 제거
+                    document.body.style.paddingBottom = '0';
+                    document.body.style.marginBottom = '0';
+                    document.documentElement.style.paddingBottom = '0';
                     
                 } else { // 키보드가 내려갔을 때
                     isKeyboardActive = false;
@@ -515,12 +532,16 @@ HTML_TEMPLATE = '''
                     if (inputContainer) {
                         inputContainer.style.bottom = '0px';
                         inputContainer.style.position = 'fixed';
+                        inputContainer.style.paddingBottom = '8px';
                     }
                     
                     const container = document.querySelector('.container');
                     if (container) {
                         container.style.height = '100vh';
                     }
+                    
+                    document.body.style.paddingBottom = '0';
+                    document.body.style.marginBottom = '0';
                 }
             }
         }
@@ -725,10 +746,11 @@ def get_openai_response(message, recipe_type, recipes):
             )
             ai_response = response.choices[0].message.content
             
-        # 구버전 API 호출 (폴백)
+        # 구버전 API 호출 (폴백) - 신버전 방식으로 수정
         else:
-            import openai as openai_legacy
-            response = openai_legacy.ChatCompletion.create(
+            # 신버전이지만 client가 None인 경우 - 직접 생성
+            temp_client = OpenAI(api_key=openai_api_key)
+            response = temp_client.chat.completions.create(
                 model=model_to_use,
                 messages=[
                     {"role": "system", "content": "당신은 전문 미용사를 위한 헤어 기술 전문가입니다."},
