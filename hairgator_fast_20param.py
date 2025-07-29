@@ -115,7 +115,7 @@ HTML_TEMPLATE = '''
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #e91e63 0%, #ad1457 50%, #880e4f 100%);
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0fe 50%, #f1f8ff 100%);
             min-height: 100vh;
             min-height: -webkit-fill-available;
             display: flex;
@@ -162,47 +162,52 @@ HTML_TEMPLATE = '''
             }
             
             .input-container {
-                padding: 12px 16px;
-                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                padding: 10px 12px;
+                padding-bottom: 10px;
+            }
+            
+            /* 키보드 활성화 시 브라우저 UI 완전 숨김 */
+            .keyboard-active {
+                height: 100vh;
+                overflow: hidden;
             }
             
             .keyboard-active .input-container {
-                padding-bottom: 8px;
+                padding-bottom: 6px;
+                position: fixed;
+                bottom: 0;
+            }
+            
+            /* iOS Safari 하단 바 숨김 */
+            .keyboard-active body {
+                padding-bottom: 0;
             }
         }
         
         .header {
-            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 25px 30px;
             text-align: center;
             position: relative;
-            box-shadow: 0 2px 10px rgba(233, 30, 99, 0.3);
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="scissors" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><text x="10" y="15" text-anchor="middle" fill="rgba(255,255,255,0.1)" font-size="12">✂️</text></pattern></defs><rect width="100" height="100" fill="url(%23scissors)"/></svg>') repeat;
-            opacity: 0.1;
+            box-shadow: 0 2px 15px rgba(102, 126, 234, 0.15);
         }
         
         .logo {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(45deg, #ff1744, #e91e63, #ad1457);
-            border-radius: 12px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #ff6b9d, #c44569);
+            border-radius: 16px;
             margin: 0 auto 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
             position: relative;
             z-index: 1;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
         }
         
         .header h1 {
@@ -239,11 +244,11 @@ HTML_TEMPLATE = '''
         }
         
         .user-message {
-            background: linear-gradient(135deg, #e91e63, #ad1457);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             margin-left: auto;
             text-align: right;
-            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
         }
         
         .bot-message {
@@ -251,38 +256,50 @@ HTML_TEMPLATE = '''
             color: #333;
             margin-right: auto;
             border: 1px solid #f0f0f0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             position: relative;
         }
         
         .bot-message::before {
-            content: '🦎';
+            content: 'H';
             position: absolute;
-            top: -8px;
-            left: 12px;
-            background: linear-gradient(135deg, #e91e63, #ad1457);
-            width: 24px;
-            height: 24px;
+            top: -10px;
+            left: 15px;
+            background: linear-gradient(45deg, #ff6b9d, #c44569);
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            border: 2px solid white;
+            font-size: 14px;
+            font-weight: 800;
+            color: white;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(255, 107, 157, 0.3);
         }
         
         .input-container {
-            padding: 15px 20px;
+            padding: 12px 16px;
             background: white;
             border-top: 1px solid #e9ecef;
-            position: sticky;
+            position: fixed;
             bottom: 0;
-            z-index: 100;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
         }
         
-        /* 키보드 올라올 때 패딩 제거 */
+        /* 키보드 활성화 시 하단 메뉴 완전 숨김 */
         .keyboard-active .input-container {
-            padding-bottom: 15px;
+            padding-bottom: 8px;
+            transform: translateY(0);
+        }
+        
+        /* 채팅 컨테이너에 하단 여백 추가 (입력창 공간 확보) */
+        .chat-container {
+            padding-bottom: 80px; /* 입력창 높이만큼 여백 */
         }
         
         .input-group {
@@ -306,9 +323,9 @@ HTML_TEMPLATE = '''
         }
         
         .input-field:focus {
-            border-color: #e91e63;
+            border-color: #667eea;
             -webkit-appearance: none;
-            box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.12);
         }
         
         /* iOS Safari 키보드 대응 */
@@ -321,7 +338,7 @@ HTML_TEMPLATE = '''
         
         .send-btn {
             padding: 12px 24px;
-            background: linear-gradient(135deg, #e91e63, #ad1457);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
             border-radius: 25px;
@@ -335,13 +352,13 @@ HTML_TEMPLATE = '''
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
             font-weight: 600;
-            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
         }
         
         .send-btn:hover, .send-btn:active {
-            background: linear-gradient(135deg, #ad1457, #880e4f);
+            background: linear-gradient(135deg, #5a67d8, #667eea);
             transform: scale(0.98);
-            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.4);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
         }
         
         .send-btn:disabled {
@@ -362,8 +379,8 @@ HTML_TEMPLATE = '''
             padding: 10px;
             font-size: 0.9rem;
             color: white;
-            background: linear-gradient(135deg, #e91e63, #ad1457);
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-bottom: 1px solid rgba(255,255,255,0.15);
             font-weight: 500;
         }
     </style>
@@ -377,12 +394,12 @@ HTML_TEMPLATE = '''
         <div class="header">
             <div class="logo">H</div>
             <h1>헤어게이터</h1>
-            <p>🦎 전문 미용사를 위한 헤어 레시피 챗봇</p>
+            <p>전문 미용사를 위한 헤어 레시피 챗봇</p>
         </div>
         
         <div class="chat-container" id="chatContainer">
             <div class="message bot-message">
-                안녕하세요! 헤어게이터입니다 🦎✨<br>
+                안녕하세요! 헤어게이터입니다 ✨<br>
                 미용사님을 위한 전문 헤어 레시피를 제공해드려요!<br>
                 <br>
                 <strong>🎨 질문 예시:</strong><br>
@@ -410,7 +427,7 @@ HTML_TEMPLATE = '''
     </div>
 
     <script>
-        // 키보드 대응 (iOS/Android)
+        // 키보드 대응 (iOS/Android) - ChatGPT 스타일
         let initialViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         let isKeyboardActive = false;
         
@@ -421,14 +438,38 @@ HTML_TEMPLATE = '''
                 
                 if (heightDiff > 150) { // 키보드가 올라왔을 때
                     isKeyboardActive = true;
+                    document.documentElement.classList.add('keyboard-active');
                     document.body.classList.add('keyboard-active');
-                    document.body.style.height = '100vh';
-                    document.querySelector('.container').style.height = currentHeight + 'px';
+                    
+                    // 키보드 높이만큼 입력창 위치 조정
+                    const inputContainer = document.querySelector('.input-container');
+                    if (inputContainer) {
+                        inputContainer.style.bottom = '0px';
+                        inputContainer.style.position = 'fixed';
+                    }
+                    
+                    // 뷰포트 크기에 맞춰 컨테이너 조정
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.style.height = currentHeight + 'px';
+                    }
+                    
                 } else { // 키보드가 내려갔을 때
                     isKeyboardActive = false;
+                    document.documentElement.classList.remove('keyboard-active');
                     document.body.classList.remove('keyboard-active');
-                    document.body.style.height = '100vh';
-                    document.querySelector('.container').style.height = '100vh';
+                    
+                    // 원래 상태로 복원
+                    const inputContainer = document.querySelector('.input-container');
+                    if (inputContainer) {
+                        inputContainer.style.bottom = '0px';
+                        inputContainer.style.position = 'fixed';
+                    }
+                    
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.style.height = '100vh';
+                    }
                 }
             }
         }
@@ -469,36 +510,45 @@ HTML_TEMPLATE = '''
             }
         }
         
-        // 입력 필드 포커스 시 스크롤 조정
+        // 입력 필드 포커스 시 ChatGPT 스타일 동작
         const inputField = document.getElementById('userInput');
         
         inputField.addEventListener('focus', function() {
-            // 약간의 딜레이 후 스크롤 조정
+            // 포커스 시 스크롤을 하단으로
             setTimeout(() => {
+                window.scrollTo(0, document.body.scrollHeight);
+                
+                // 키보드 올라온 상태에서 입력창을 키보드 바로 위로
                 if (window.visualViewport) {
-                    // 키보드가 올라온 상태에서만 스크롤 조정
                     const currentHeight = window.visualViewport.height;
                     const heightDiff = initialViewportHeight - currentHeight;
                     
                     if (heightDiff > 150) {
-                        this.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'end',
-                            inline: 'nearest'
-                        });
+                        // 입력창이 키보드에 가려지지 않도록 조정
+                        const inputContainer = document.querySelector('.input-container');
+                        if (inputContainer) {
+                            inputContainer.scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'end' 
+                            });
+                        }
                     }
-                }
-            }, 300);
-        });
-        
-        // 입력 필드 블러 시 키보드 상태 체크
-        inputField.addEventListener('blur', function() {
-            setTimeout(() => {
-                if (!isKeyboardActive) {
-                    document.body.classList.remove('keyboard-active');
                 }
             }, 100);
         });
+        
+        // 입력 필드 블러 시 상태 정리
+        inputField.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (!isKeyboardActive) {
+                    document.documentElement.classList.remove('keyboard-active');
+                    document.body.classList.remove('keyboard-active');
+                }
+            }, 200);
+        });
+        
+        // 브라우저 크기 변경 시에도 대응
+        window.addEventListener('resize', handleViewportChange);
 
         async function sendMessage() {
             const input = document.getElementById('userInput');
