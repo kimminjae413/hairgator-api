@@ -645,8 +645,8 @@ HTML_CONTENT = """
                     id="messageInput" 
                     placeholder="메시지를 입력하세요..."
                     rows="1"
-                    onkeydown="handleKeyPress(event)"
-                    oninput="adjustTextareaHeight(this)"
+                  onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
+oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px';"
                 ></textarea>
             </div>
             <button class="send-button" id="sendButton" onclick="sendMessage()">
