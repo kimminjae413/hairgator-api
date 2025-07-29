@@ -25,13 +25,40 @@ except Exception as e:
     print(f"⚠️ OpenAI 초기화 오류: {e}")
     openai = None
 
-# 간단한 헤어 진단 데이터
-HAIR_SOLUTIONS = {
-    "탈모": ["미녹시딜 사용", "모발이식 상담", "영양제 복용", "스트레스 관리"],
-    "지성모발": ["순한 샴푸 사용", "주 2-3회 세발", "기름기 제거 제품"],
-    "건성모발": ["보습 트리트먼트", "오일 케어", "부드러운 샴푸"],
-    "비듬": ["항진균 샴푸", "스케일링", "피부과 상담"],
-    "모발손상": ["단백질 트리트먼트", "열 보호제", "정기적 컷팅"]
+# 헤어 레시피 데이터 (미용사 전용)
+HAIR_RECIPES = {
+    "컬러링": {
+        "keywords": ["컬러", "염색", "애쉬", "브라운", "블론드", "토닝", "탈색"],
+        "recipes": [
+            "🎨 애쉬 브라운 레시피: 6/1 + 7/1 (1:1) + 6% 옥시",
+            "✨ 베이지 블론드: 탈색 후 9/31 + 10/1 (2:1) + 3% 옥시",
+            "🌟 그레이 애쉬: 7/1 + 소량의 0/11 + 6% 옥시"
+        ]
+    },
+    "펌": {
+        "keywords": ["펌", "파마", "볼륨", "웨이브", "컬"],
+        "recipes": [
+            "💫 볼륨 펌: 1제 15분 → 2제 10분 (중성화까지)",
+            "🌊 웨이브 펌: 콜드 1제 20분 → 2제 15분",
+            "🔥 디지털 펌: 열펌 1제 → 건조 → 2제 가열"
+        ]
+    },
+    "트리트먼트": {
+        "keywords": ["트리트먼트", "케어", "손상", "영양", "수분"],
+        "recipes": [
+            "💧 수분 케어: 케라틴 + 히알루론산 (1:1) 15분",
+            "🛡️ 단백질 케어: PPT + 아미노산 복합체 20분",
+            "✨ 큐티클 케어: 실크 프로틴 + 오일 (2:1)"
+        ]
+    },
+    "스타일링": {
+        "keywords": ["스타일링", "드라이", "세팅", "볼륨", "매직"],
+        "recipes": [
+            "🎯 볼륨 세팅: 무스 + 스프레이 (텐션 드라이)",
+            "💨 자연 웨이브: 크림 + 디퓨저 드라이",
+            "⚡ 매직 스트레이트: 1제 → 아이론 → 2제"
+        ]
+    }
 }
 
 # HTML 템플릿
@@ -69,7 +96,7 @@ HTML_TEMPLATE = '''
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 50%, #880e4f 100%);
             min-height: 100vh;
             min-height: -webkit-fill-available;
             display: flex;
@@ -79,6 +106,8 @@ HTML_TEMPLATE = '''
             position: fixed;
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
         }
         
         html {
@@ -101,36 +130,83 @@ HTML_TEMPLATE = '''
         
         /* 모바일에서 더 자연스러운 크기 */
         @media (max-width: 768px) {
+            body {
+                align-items: stretch;
+            }
+            
             .container {
                 width: 100%;
                 height: 100%;
                 border-radius: 0;
                 max-width: none;
+                margin: 0;
+            }
+            
+            .input-container {
+                padding: 12px 16px;
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+            }
+            
+            .keyboard-active .input-container {
+                padding-bottom: 8px;
             }
         }
         
         .header {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            background: linear-gradient(135deg, #e91e63 0%, #ad1457 100%);
             color: white;
-            padding: 30px;
+            padding: 25px 30px;
             text-align: center;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(233, 30, 99, 0.3);
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="scissors" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><text x="10" y="15" text-anchor="middle" fill="rgba(255,255,255,0.1)" font-size="12">✂️</text></pattern></defs><rect width="100" height="100" fill="url(%23scissors)"/></svg>') repeat;
+            opacity: 0.1;
+        }
+        
+        .logo {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #ff1744, #e91e63, #ad1457);
+            border-radius: 12px;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            position: relative;
+            z-index: 1;
         }
         
         .header h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
         }
         
         .header p {
             opacity: 0.9;
-            font-size: 1rem;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+            font-weight: 500;
         }
         
         .chat-container {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
-            background: #f8f9fa;
+            background: #fafafa;
             -webkit-overflow-scrolling: touch;
             scroll-behavior: smooth;
         }
@@ -144,25 +220,50 @@ HTML_TEMPLATE = '''
         }
         
         .user-message {
-            background: #007bff;
+            background: linear-gradient(135deg, #e91e63, #ad1457);
             color: white;
             margin-left: auto;
             text-align: right;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
         }
         
         .bot-message {
             background: white;
             color: #333;
             margin-right: auto;
-            border: 1px solid #e9ecef;
+            border: 1px solid #f0f0f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        
+        .bot-message::before {
+            content: '🦎';
+            position: absolute;
+            top: -8px;
+            left: 12px;
+            background: linear-gradient(135deg, #e91e63, #ad1457);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border: 2px solid white;
         }
         
         .input-container {
-            padding: 20px;
+            padding: 15px 20px;
             background: white;
             border-top: 1px solid #e9ecef;
-            padding-bottom: calc(20px + env(safe-area-inset-bottom));
-            position: relative;
+            position: sticky;
+            bottom: 0;
+            z-index: 100;
+        }
+        
+        /* 키보드 올라올 때 패딩 제거 */
+        .keyboard-active .input-container {
+            padding-bottom: 15px;
         }
         
         .input-group {
@@ -186,8 +287,9 @@ HTML_TEMPLATE = '''
         }
         
         .input-field:focus {
-            border-color: #007bff;
+            border-color: #e91e63;
             -webkit-appearance: none;
+            box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
         }
         
         /* iOS Safari 키보드 대응 */
@@ -200,7 +302,7 @@ HTML_TEMPLATE = '''
         
         .send-btn {
             padding: 12px 24px;
-            background: #007bff;
+            background: linear-gradient(135deg, #e91e63, #ad1457);
             color: white;
             border: none;
             border-radius: 25px;
@@ -213,11 +315,14 @@ HTML_TEMPLATE = '''
             align-items: center;
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
         }
         
         .send-btn:hover, .send-btn:active {
-            background: #0056b3;
+            background: linear-gradient(135deg, #ad1457, #880e4f);
             transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(233, 30, 99, 0.4);
         }
         
         .send-btn:disabled {
@@ -237,33 +342,37 @@ HTML_TEMPLATE = '''
             text-align: center;
             padding: 10px;
             font-size: 0.9rem;
-            color: #28a745;
-            background: #d4edda;
-            border-bottom: 1px solid #c3e6cb;
+            color: white;
+            background: linear-gradient(135deg, #e91e63, #ad1457);
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            font-weight: 500;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="status">
-            ✅ 서버 연결됨 - 기본 헤어 진단 서비스 제공 중
+            ✨ 미용사 전용 헤어 레시피 서비스 - 온라인
         </div>
         
         <div class="header">
-            <h1>🦎 헤어게이터</h1>
-            <p>AI 헤어케어 전문가가 도와드려요!</p>
+            <div class="logo">H</div>
+            <h1>헤어게이터</h1>
+            <p>🦎 전문 미용사를 위한 헤어 레시피 챗봇</p>
         </div>
         
         <div class="chat-container" id="chatContainer">
             <div class="message bot-message">
                 안녕하세요! 헤어게이터입니다 🦎✨<br>
-                어떤 헤어 고민이 있으신가요?<br>
+                미용사님을 위한 전문 헤어 레시피를 제공해드려요!<br>
                 <br>
-                <strong>질문 예시:</strong><br>
-                • "머리가 많이 빠져요"<br>
-                • "머리가 너무 기름져요"<br>
-                • "비듬이 심해요"<br>
-                • "모발이 손상됐어요"
+                <strong>🎨 질문 예시:</strong><br>
+                • "애쉬 브라운 컬러 레시피 알려주세요"<br>
+                • "손상모발 트리트먼트 방법"<br>
+                • "볼륨 펌 약제 비율"<br>
+                • "탈색 후 토닝 레시피"<br>
+                <br>
+                <em>💡 전문 미용사만을 위한 정확한 시술 정보를 제공합니다</em>
             </div>
         </div>
         
@@ -274,7 +383,7 @@ HTML_TEMPLATE = '''
         <div class="input-container">
             <div class="input-group">
                 <input type="text" id="userInput" class="input-field" 
-                       placeholder="헤어 고민을 말씀해주세요..." 
+                       placeholder="헤어 레시피나 시술 방법을 물어보세요..." 
                        onkeypress="handleKeyPress(event)">
                 <button onclick="sendMessage()" class="send-btn" id="sendBtn">전송</button>
             </div>
@@ -284,6 +393,7 @@ HTML_TEMPLATE = '''
     <script>
         // 키보드 대응 (iOS/Android)
         let initialViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        let isKeyboardActive = false;
         
         function handleViewportChange() {
             if (window.visualViewport) {
@@ -291,9 +401,13 @@ HTML_TEMPLATE = '''
                 const heightDiff = initialViewportHeight - currentHeight;
                 
                 if (heightDiff > 150) { // 키보드가 올라왔을 때
-                    document.body.style.height = currentHeight + 'px';
+                    isKeyboardActive = true;
+                    document.body.classList.add('keyboard-active');
+                    document.body.style.height = '100vh';
                     document.querySelector('.container').style.height = currentHeight + 'px';
                 } else { // 키보드가 내려갔을 때
+                    isKeyboardActive = false;
+                    document.body.classList.remove('keyboard-active');
                     document.body.style.height = '100vh';
                     document.querySelector('.container').style.height = '100vh';
                 }
@@ -337,10 +451,34 @@ HTML_TEMPLATE = '''
         }
         
         // 입력 필드 포커스 시 스크롤 조정
-        document.getElementById('userInput').addEventListener('focus', function() {
+        const inputField = document.getElementById('userInput');
+        
+        inputField.addEventListener('focus', function() {
+            // 약간의 딜레이 후 스크롤 조정
             setTimeout(() => {
-                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (window.visualViewport) {
+                    // 키보드가 올라온 상태에서만 스크롤 조정
+                    const currentHeight = window.visualViewport.height;
+                    const heightDiff = initialViewportHeight - currentHeight;
+                    
+                    if (heightDiff > 150) {
+                        this.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'end',
+                            inline: 'nearest'
+                        });
+                    }
+                }
             }, 300);
+        });
+        
+        // 입력 필드 블러 시 키보드 상태 체크
+        inputField.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (!isKeyboardActive) {
+                    document.body.classList.remove('keyboard-active');
+                }
+            }, 100);
         });
 
         async function sendMessage() {
@@ -391,44 +529,59 @@ HTML_TEMPLATE = '''
 </html>
 '''
 
-def analyze_hair_concern(message):
-    """간단한 키워드 기반 헤어 진단"""
+def analyze_hair_query(message):
+    """미용사 전용 헤어 레시피 분석"""
     message_lower = message.lower()
     
-    if any(word in message_lower for word in ['탈모', '빠짐', '빠져', '빠지', '모발', '대머리']):
-        return "탈모", HAIR_SOLUTIONS["탈모"]
-    elif any(word in message_lower for word in ['기름', '지성', '끈적', '번들']):
-        return "지성모발", HAIR_SOLUTIONS["지성모발"]
-    elif any(word in message_lower for word in ['건조', '건성', '푸석', '거칠']):
-        return "건성모발", HAIR_SOLUTIONS["건성모발"]
-    elif any(word in message_lower for word in ['비듬', '각질', '가려']):
-        return "비듬", HAIR_SOLUTIONS["비듬"]
-    elif any(word in message_lower for word in ['손상', '끊어', '갈라', '트리트먼트']):
-        return "모발손상", HAIR_SOLUTIONS["모발손상"]
+    if any(word in message_lower for word in ['컬러', '염색', '애쉬', '브라운', '블론드', '토닝', '탈색']):
+        return "컬러링", HAIR_RECIPES["컬러링"]["recipes"]
+    elif any(word in message_lower for word in ['펌', '파마', '볼륨', '웨이브', '컬']):
+        return "펌", HAIR_RECIPES["펌"]["recipes"]
+    elif any(word in message_lower for word in ['트리트먼트', '케어', '손상', '영양', '수분']):
+        return "트리트먼트", HAIR_RECIPES["트리트먼트"]["recipes"]
+    elif any(word in message_lower for word in ['스타일링', '드라이', '세팅', '매직']):
+        return "스타일링", HAIR_RECIPES["스타일링"]["recipes"]
     else:
-        return "일반상담", ["규칙적인 헤어케어", "전문가 상담", "적절한 제품 사용"]
+        return "일반상담", [
+            "🎨 컬러링 레시피를 원하시면 '애쉬 브라운' 등을 말씀해주세요",
+            "💫 펜 레시피는 '볼륨 펌' 등으로 문의하세요",
+            "💧 트리트먼트는 '손상모발 케어' 등으로 질문해주세요"
+        ]
 
-def get_openai_response(message, hair_type, solutions):
-    """OpenAI API를 통한 응답 생성 (안전 처리)"""
+def get_openai_response(message, recipe_type, recipes):
+    """OpenAI API를 통한 미용사 전용 응답 생성 (안전 처리)"""
     if not openai or not openai.api_key:
         return f"""
-        <strong>🦎 {hair_type} 진단 결과</strong><br><br>
+        <strong>🦎 {recipe_type} 전문 레시피</strong><br><br>
         
-        <strong>추천 솔루션:</strong><br>
-        {'<br>'.join([f'• {sol}' for sol in solutions])}<br><br>
+        <strong>📋 추천 레시피:</strong><br>
+        {'<br>'.join([f'{recipe}' for recipe in recipes])}<br><br>
         
-        <strong>💡 추가 팁:</strong><br>
-        전문가와 상담하시는 것을 권장드려요!
+        <strong>⚠️ 주의사항:</strong><br>
+        • 패치 테스트 필수<br>
+        • 모발 상태 확인 후 시술<br>
+        • 시술 시간 준수<br><br>
+        
+        <strong>💡 추가 문의:</strong><br>
+        더 자세한 레시피나 응용법이 필요하시면 말씀해주세요!
         """
     
     try:
         prompt = f"""
-        사용자의 헤어 고민: {message}
-        진단된 문제: {hair_type}
-        추천 솔루션: {', '.join(solutions)}
+        당신은 전문 미용사를 위한 헤어 레시피 전문가입니다.
         
-        헤어케어 전문가로서 친근하고 도움이 되는 조언을 200자 이내로 제공해주세요.
-        이모지를 적절히 사용하고, 구체적이고 실용적인 팁을 포함해주세요.
+        미용사 질문: {message}
+        카테고리: {recipe_type}
+        기본 레시피: {', '.join(recipes)}
+        
+        다음 조건을 만족하는 전문적인 답변을 제공해주세요:
+        1. 미용사 전용 전문 용어 사용
+        2. 구체적인 시술 방법과 주의사항
+        3. 약제 비율과 시간 명시
+        4. 이모지 적절히 사용
+        5. 200자 내외로 간결하게
+        
+        반드시 "전문 미용사용"임을 강조하고, 일반인 사용 금지 문구 포함하세요.
         """
         
         response = openai.ChatCompletion.create(
@@ -443,13 +596,14 @@ def get_openai_response(message, hair_type, solutions):
     except Exception as e:
         logger.error(f"OpenAI API 오류: {e}")
         return f"""
-        <strong>🦎 {hair_type} 진단 결과</strong><br><br>
+        <strong>🦎 {recipe_type} 전문 레시피</strong><br><br>
         
-        <strong>추천 솔루션:</strong><br>
-        {'<br>'.join([f'• {sol}' for sol in solutions])}<br><br>
+        <strong>📋 추천 레시피:</strong><br>
+        {'<br>'.join([f'{recipe}' for recipe in recipes])}<br><br>
         
-        <strong>💡 추가 팁:</strong><br>
-        규칙적인 관리와 전문가 상담을 권장드려요!
+        <strong>⚠️ 전문 미용사 전용:</strong><br>
+        이 정보는 전문 미용사만 사용하세요!<br>
+        일반인은 반드시 미용실에서 시술받으시기 바랍니다.
         """
 
 @app.route('/')
@@ -465,19 +619,19 @@ def chat():
         if not message:
             return jsonify({'error': '메시지가 비어있습니다.'}), 400
         
-        logger.info(f"사용자 메시지: {message}")
+        logger.info(f"미용사 질문: {message}")
         
-        # 헤어 고민 분석
-        hair_type, solutions = analyze_hair_concern(message)
+        # 헤어 레시피 분석
+        recipe_type, recipes = analyze_hair_query(message)
         
         # AI 응답 생성
-        response = get_openai_response(message, hair_type, solutions)
+        response = get_openai_response(message, recipe_type, recipes)
         
-        logger.info(f"응답 생성 완료: {hair_type}")
+        logger.info(f"레시피 제공 완료: {recipe_type}")
         
         return jsonify({
             'response': response,
-            'hair_type': hair_type,
+            'recipe_type': recipe_type,
             'timestamp': datetime.now().isoformat()
         })
         
