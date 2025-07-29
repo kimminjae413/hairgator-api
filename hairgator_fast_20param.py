@@ -44,13 +44,17 @@ except ImportError:
 try:
     import anthropic
     if ANTHROPIC_API_KEY != 'your_anthropic_key_here':
-        anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        print("✅ Claude API 설정 완료")
+        try:
+            anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+            print("✅ Claude API 설정 완료")
+        except Exception as init_error:
+            print(f"❌ Claude 초기화 실패: {init_error}")
+            anthropic_client = None
     else:
         print("❌ Claude API 키 필요")
         anthropic_client = None
 except Exception as e:
-    print(f"❌ Anthropic 설정 오류: {e}")
+    print(f"❌ Anthropic 패키지 오류: {e}")
     anthropic_client = None
 
 # 이미지 저장 디렉토리
