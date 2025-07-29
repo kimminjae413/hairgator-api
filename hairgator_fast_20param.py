@@ -11,19 +11,38 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 print("🚀 헤어게이터 서버 시작 중...")
+print(f"🔧 환경: {os.getenv('ENVIRONMENT', 'development')}")
+print(f"🐍 Python 버전: {os.getenv('PYTHON_VERSION', 'default')}")
 
 # OpenAI 설정 (안전하게)
 try:
-    import openai
+    from openai import OpenAI
     openai_api_key = os.getenv('OPENAI_API_KEY')
-    if openai_api_key:
-        openai.api_key = openai_api_key
+    openai_model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+    
+    if openai_api_key and openai_api_key != '............':
+        client = OpenAI(api_key=openai_api_key)
         print("✅ OpenAI API 설정 완료")
+        print(f"🤖 사용 모델: {openai_model}")
     else:
-        print("⚠️ OpenAI API 키가 없습니다 - 테스트 모드로 실행")
+        print("⚠️ OpenAI API 키가 설정되지 않음 - 기본 레시피 모드로 실행")
+        client = None
+        openai_model = None
 except Exception as e:
     print(f"⚠️ OpenAI 초기화 오류: {e}")
-    openai = None
+    client = None
+    openai_model = None
+
+# Claude 설정 (현재는 비활성화)
+claude_api_key = os.getenv('ANTHROPIC_API_KEY')
+claude_model = os.getenv('CLAUDE_MODEL', 'claude-3-sonnet-20240229')
+
+if claude_api_key and claude_api_key != '............':
+    print("🔵 Claude API 키 감지됨 (현재 비활성화)")
+else:
+    print("⚪ Claude API 미설정")
+
+print("=" * 50)
 
 # 헤어 레시피 데이터 (미용사 전용)
 HAIR_RECIPES = {
@@ -549,10 +568,11 @@ def analyze_hair_query(message):
         ]
 
 def get_openai_response(message, recipe_type, recipes):
-    """OpenAI API를 통한 미용사 전용 응답 생성 (안전 처리)"""
-    if not openai or not openai.api_key:
+    """OpenAI API를 통한 미용사 전용 응답 생성"""
+    # API 키 체크
+    if not client:
         return f"""
-        <strong>🦎 {recipe_type} 전문 레시피</strong><br><br>
+        <strong>🦎 {recipe_type} 기본 레시피</strong><br><br>
         
         <strong>📋 추천 레시피:</strong><br>
         {'<br>'.join([f'{recipe}' for recipe in recipes])}<br><br>
@@ -562,48 +582,81 @@ def get_openai_response(message, recipe_type, recipes):
         • 모발 상태 확인 후 시술<br>
         • 시술 시간 준수<br><br>
         
-        <strong>💡 추가 문의:</strong><br>
-        더 자세한 레시피나 응용법이 필요하시면 말씀해주세요!
+        <strong>💡 AI 기능:</strong><br>
+        OpenAI API 연결 시 더 상세한 조언을 받을 수 있어요!
         """
     
     try:
+        # 모델 설정
+        model_to_use = openai_model or 'gpt-3.5-turbo'
+        
+        # 전문적인 프롬프트
         prompt = f"""
-        당신은 전문 미용사를 위한 헤어 레시피 전문가입니다.
-        
-        미용사 질문: {message}
-        카테고리: {recipe_type}
-        기본 레시피: {', '.join(recipes)}
-        
-        다음 조건을 만족하는 전문적인 답변을 제공해주세요:
-        1. 미용사 전용 전문 용어 사용
-        2. 구체적인 시술 방법과 주의사항
-        3. 약제 비율과 시간 명시
-        4. 이모지 적절히 사용
-        5. 200자 내외로 간결하게
-        
-        반드시 "전문 미용사용"임을 강조하고, 일반인 사용 금지 문구 포함하세요.
+당신은 20년 경력의 전문 헤어 디자이너이자 컬러리스트입니다.
+
+미용사 질문: "{message}"
+카테고리: {recipe_type}
+기본 레시피: {', '.join(recipes)}
+
+다음 조건으로 전문적인 답변을 해주세요:
+
+1. 🎯 구체적인 시술 방법 (단계별)
+2. 📊 정확한 약제 비율과 시간
+3. ⚠️ 주의사항과 트러블슈팅
+4. 💡 프로 팁 (현장에서만 알 수 있는)
+5. 🚫 일반인 사용 금지 명시
+
+답변은 HTML 형식으로 200자 내외, 이모지 적절히 사용.
+반드시 "전문 미용사 전용" 강조하세요.
         """
         
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.7
+        # OpenAI API 호출
+        response = client.chat.completions.create(
+            model=model_to_use,
+            messages=[
+                {"role": "system", "content": "당신은 전문 미용사를 위한 헤어 기술 전문가입니다."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=400,
+            temperature=0.7,
+            top_p=0.9
         )
         
-        return response.choices[0].message.content
+        ai_response = response.choices[0].message.content
+        
+        # 응답 검증 및 포맷팅
+        if len(ai_response.strip()) < 50:
+            raise Exception("응답이 너무 짧습니다")
+            
+        return ai_response
         
     except Exception as e:
         logger.error(f"OpenAI API 오류: {e}")
+        
+        # 폴백 응답 (더 전문적으로)
         return f"""
         <strong>🦎 {recipe_type} 전문 레시피</strong><br><br>
         
-        <strong>📋 추천 레시피:</strong><br>
-        {'<br>'.join([f'{recipe}' for recipe in recipes])}<br><br>
+        <strong>📋 시술 가이드:</strong><br>
+        {'<br>'.join([f'• {recipe}' for recipe in recipes])}<br><br>
         
-        <strong>⚠️ 전문 미용사 전용:</strong><br>
-        이 정보는 전문 미용사만 사용하세요!<br>
-        일반인은 반드시 미용실에서 시술받으시기 바랍니다.
+        <strong>⚠️ 전문 미용사 전용 정보:</strong><br>
+        • 고객 모발 진단 후 시술 진행<br>
+        • 패치 테스트 24시간 전 실시<br>
+        • 시술 중 모발 상태 지속 체크<br><br>
+        
+        <strong>🔧 시스템 정보:</strong><br>
+        API 연결 오류: {str(e)[:50]}...<br>
+        기본 레시피로 제공됩니다.
+        """
+        
+    except KeyError as e:
+        logger.error(f"환경변수 오류: {e}")
+        return f"""
+        <strong>⚠️ 시스템 설정 오류</strong><br><br>
+        환경변수가 올바르게 설정되지 않았습니다.<br>
+        관리자에게 문의해주세요.<br><br>
+        <strong>오류:</strong> {str(e)}
         """
 
 @app.route('/')
@@ -644,19 +697,36 @@ def chat():
 
 @app.route('/health')
 def health():
+    """서버 상태 및 환경변수 체크"""
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'openai_available': bool(openai and openai.api_key)
+        'environment': os.getenv('ENVIRONMENT', 'development'),
+        'openai_available': bool(client),
+        'openai_model': openai_model,
+        'claude_available': bool(claude_api_key and claude_api_key != '............'),
+        'claude_model': claude_model if claude_api_key else None,
+        'python_version': os.getenv('PYTHON_VERSION', 'default'),
+        'port': os.getenv('PORT', '5000')
     })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     
-    print(f"🚀 헤어게이터 서버 시작!")
+    print(f"🚀 헤어게이터 서버 최종 시작!")
     print(f"📍 포트: {port}")
-    print(f"🔑 OpenAI API: {'✅ 연결됨' if openai and openai.api_key else '❌ 미연결'}")
-    print(f"🌐 서버 모드: {'Production' if os.environ.get('FLASK_ENV') == 'production' else 'Development'}")
+    print(f"🔑 OpenAI: {'✅ 연결됨' if client else '❌ 미연결'}")
+    print(f"🤖 모델: {openai_model or '기본 레시피 모드'}")
+    print(f"🔵 Claude: {'✅ 준비됨' if claude_api_key and claude_api_key != '............' else '❌ 미설정'}")
+    print(f"🌐 환경: {os.getenv('ENVIRONMENT', 'development')}")
+    print("=" * 50)
+    print("💡 테스트 질문: '애쉬 브라운 레시피 알려주세요'")
+    print("🎯 URL: https://여러분의도메인.onrender.com/health (상태 확인)")
+    print("=" * 50)
     
     # Render 환경에서는 반드시 0.0.0.0으로 바인딩
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(
+        host='0.0.0.0', 
+        port=port, 
+        debug=(os.getenv('ENVIRONMENT') != 'production')
+    )
