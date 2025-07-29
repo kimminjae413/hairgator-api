@@ -40,31 +40,73 @@ HTML_TEMPLATE = '''
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
     <title>헤어게이터 - AI 헤어케어 진단</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* 입력 필드만 텍스트 선택 허용 */
+        input, textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
         }
         
         body {
-            font-family: 'Noto Sans KR', Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            min-height: -webkit-fill-available;
             display: flex;
             justify-content: center;
             align-items: center;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        html {
+            height: -webkit-fill-available;
         }
         
         .container {
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            width: 90%;
+            width: 100%;
             max-width: 500px;
+            height: 100vh;
+            height: -webkit-fill-available;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* 모바일에서 더 자연스러운 크기 */
+        @media (max-width: 768px) {
+            .container {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                max-width: none;
+            }
         }
         
         .header {
@@ -85,10 +127,12 @@ HTML_TEMPLATE = '''
         }
         
         .chat-container {
-            height: 400px;
+            flex: 1;
             padding: 20px;
             overflow-y: auto;
             background: #f8f9fa;
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
         }
         
         .message {
@@ -117,11 +161,14 @@ HTML_TEMPLATE = '''
             padding: 20px;
             background: white;
             border-top: 1px solid #e9ecef;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            position: relative;
         }
         
         .input-group {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
         
         .input-field {
@@ -129,13 +176,26 @@ HTML_TEMPLATE = '''
             padding: 12px 18px;
             border: 2px solid #e9ecef;
             border-radius: 25px;
-            font-size: 1rem;
+            font-size: 16px; /* iOS 확대 방지 */
             outline: none;
             transition: border-color 0.3s;
+            background: white;
+            -webkit-appearance: none;
+            resize: none;
+            min-height: 44px; /* 터치 타겟 최소 크기 */
         }
         
         .input-field:focus {
             border-color: #007bff;
+            -webkit-appearance: none;
+        }
+        
+        /* iOS Safari 키보드 대응 */
+        @supports (-webkit-touch-callout: none) {
+            .input-field:focus {
+                transform: translateZ(0);
+                -webkit-transform: translateZ(0);
+            }
         }
         
         .send-btn {
@@ -146,16 +206,24 @@ HTML_TEMPLATE = '''
             border-radius: 25px;
             cursor: pointer;
             font-size: 1rem;
-            transition: background 0.3s;
+            transition: all 0.2s;
+            min-height: 44px; /* 터치 타겟 최소 크기 */
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
         }
         
-        .send-btn:hover {
+        .send-btn:hover, .send-btn:active {
             background: #0056b3;
+            transform: scale(0.98);
         }
         
         .send-btn:disabled {
             background: #6c757d;
             cursor: not-allowed;
+            transform: none;
         }
         
         .loading {
@@ -214,6 +282,44 @@ HTML_TEMPLATE = '''
     </div>
 
     <script>
+        // 키보드 대응 (iOS/Android)
+        let initialViewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        
+        function handleViewportChange() {
+            if (window.visualViewport) {
+                const currentHeight = window.visualViewport.height;
+                const heightDiff = initialViewportHeight - currentHeight;
+                
+                if (heightDiff > 150) { // 키보드가 올라왔을 때
+                    document.body.style.height = currentHeight + 'px';
+                    document.querySelector('.container').style.height = currentHeight + 'px';
+                } else { // 키보드가 내려갔을 때
+                    document.body.style.height = '100vh';
+                    document.querySelector('.container').style.height = '100vh';
+                }
+            }
+        }
+        
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleViewportChange);
+        }
+        
+        // 화면 확대/축소 방지
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        
         function addMessage(message, isUser) {
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
@@ -224,10 +330,18 @@ HTML_TEMPLATE = '''
         }
 
         function handleKeyPress(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         }
+        
+        // 입력 필드 포커스 시 스크롤 조정
+        document.getElementById('userInput').addEventListener('focus', function() {
+            setTimeout(() => {
+                this.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        });
 
         async function sendMessage() {
             const input = document.getElementById('userInput');
