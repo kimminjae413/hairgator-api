@@ -14,22 +14,33 @@ print("🚀 헤어게이터 서버 시작 중...")
 print(f"🔧 환경: {os.getenv('ENVIRONMENT', 'development')}")
 print(f"🐍 Python 버전: {os.getenv('PYTHON_VERSION', 'default')}")
 
-# OpenAI 설정 (안전하게)
+# OpenAI 설정 (강화된 디버깅)
+openai_api_key = os.getenv('OPENAI_API_KEY')
+openai_model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
+
+print(f"🔍 디버깅: OPENAI_API_KEY 길이 = {len(openai_api_key) if openai_api_key else 0}")
+print(f"🔍 디버깅: API 키 시작 = {openai_api_key[:10] if openai_api_key else 'None'}...")
+
 try:
     from openai import OpenAI
-    openai_api_key = os.getenv('OPENAI_API_KEY')
-    openai_model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
     
-    if openai_api_key and openai_api_key != '............':
+    if openai_api_key and len(openai_api_key) > 20 and not openai_api_key.startswith('............'):
         client = OpenAI(api_key=openai_api_key)
-        print("✅ OpenAI API 설정 완료")
+        
+        # API 키 유효성 테스트
+        test_response = client.models.list()
+        
+        print("✅ OpenAI API 설정 및 연결 테스트 완료")
         print(f"🤖 사용 모델: {openai_model}")
+        print(f"📊 사용 가능한 모델 수: {len(test_response.data)}")
     else:
-        print("⚠️ OpenAI API 키가 설정되지 않음 - 기본 레시피 모드로 실행")
+        print("⚠️ OpenAI API 키가 유효하지 않음")
         client = None
         openai_model = None
+        
 except Exception as e:
-    print(f"⚠️ OpenAI 초기화 오류: {e}")
+    print(f"❌ OpenAI 초기화 실패: {str(e)}")
+    print(f"🔍 상세 오류: {type(e).__name__}")
     client = None
     openai_model = None
 
