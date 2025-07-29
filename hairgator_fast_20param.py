@@ -2,7 +2,21 @@ from flask import Flask, request, render_template_string, jsonify
 import os
 import json
 import logging
+import subprocess
+import sys
 from datetime import datetime
+
+# 강제 OpenAI 최신 버전 설치
+print("🔧 OpenAI 라이브러리 강제 업데이트 시작...")
+try:
+    subprocess.check_call([
+        sys.executable, "-m", "pip", "install", 
+        "--upgrade", "--no-cache-dir", "openai==1.52.2"
+    ])
+    print("✅ OpenAI 라이브러리 강제 업데이트 완료 (v1.52.2)")
+except Exception as e:
+    print(f"⚠️ 라이브러리 업데이트 실패: {e}")
+    print("🔄 기존 라이브러리로 계속 진행...")
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -21,18 +35,44 @@ openai_model = os.getenv('OPENAI_MODEL', 'gpt-3.5-turbo')
 print(f"🔍 디버깅: OPENAI_API_KEY 길이 = {len(openai_api_key) if openai_api_key else 0}")
 print(f"🔍 디버깅: API 키 시작 = {openai_api_key[:10] if openai_api_key else 'None'}...")
 
+# OpenAI 라이브러리 버전 확인
+try:
+    import openai
+    print(f"📦 현재 OpenAI 라이브러리 버전: {openai.__version__}")
+except:
+    print("⚠️ OpenAI 라이브러리 버전 확인 불가")
+
 try:
     from openai import OpenAI
     
     if openai_api_key and len(openai_api_key) > 20 and not openai_api_key.startswith('............'):
-        client = OpenAI(api_key=openai_api_key)
+        # 구버전 호환성을 위한 안전한 초기화
+        try:
+            client = OpenAI(api_key=openai_api_key)
+        except TypeError as e:
+            if 'proxies' in str(e):
+                print("⚠️ 구버전 OpenAI 라이브러리 감지 - 기본 초기화 시도")
+                # 구버전 방식으로 폴백
+                import openai as openai_legacy
+                openai_legacy.api_key = openai_api_key
+                client = None  # 구버전 사용 신호
+            else:
+                raise e
         
-        # API 키 유효성 테스트
-        test_response = client.models.list()
-        
-        print("✅ OpenAI API 설정 및 연결 테스트 완료")
-        print(f"🤖 사용 모델: {openai_model}")
-        print(f"📊 사용 가능한 모델 수: {len(test_response.data)}")
+        # API 키 유효성 테스트 (신버전만)
+        if client:
+            try:
+                test_response = client.models.list()
+                print("✅ OpenAI API 설정 및 연결 테스트 완료")
+                print(f"🤖 사용 모델: {openai_model}")
+                print(f"📊 사용 가능한 모델 수: {len(test_response.data)}")
+            except Exception as test_error:
+                print(f"⚠️ API 연결 테스트 실패: {test_error}")
+                print("🔄 기본 모드로 계속 진행...")
+        else:
+            print("✅ OpenAI API 키 설정 완료 (구버전 모드)")
+            print(f"🤖 사용 모델: {openai_model}")
+            
     else:
         print("⚠️ OpenAI API 키가 유효하지 않음")
         client = None
@@ -629,11 +669,11 @@ def analyze_hair_query(message):
         ]
 
 def get_openai_response(message, recipe_type, recipes):
-    """OpenAI API를 통한 미용사 전용 응답 생성"""
+    """OpenAI API를 통한 미용사 전용 응답 생성 (구/신버전 호환)"""
     # API 키 체크
-    if not client:
+    if not client and not openai_api_key:
         return f"""
-        <strong>🦎 {recipe_type} 기본 레시피</strong><br><br>
+        <strong>H {recipe_type} 기본 레시피</strong><br><br>
         
         <strong>📋 추천 레시피:</strong><br>
         {'<br>'.join([f'{recipe}' for recipe in recipes])}<br><br>
@@ -671,19 +711,33 @@ def get_openai_response(message, recipe_type, recipes):
 반드시 "전문 미용사 전용" 강조하세요.
         """
         
-        # OpenAI API 호출
-        response = client.chat.completions.create(
-            model=model_to_use,
-            messages=[
-                {"role": "system", "content": "당신은 전문 미용사를 위한 헤어 기술 전문가입니다."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=400,
-            temperature=0.7,
-            top_p=0.9
-        )
-        
-        ai_response = response.choices[0].message.content
+        # 신버전 API 호출
+        if client:
+            response = client.chat.completions.create(
+                model=model_to_use,
+                messages=[
+                    {"role": "system", "content": "당신은 전문 미용사를 위한 헤어 기술 전문가입니다."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=400,
+                temperature=0.7,
+                top_p=0.9
+            )
+            ai_response = response.choices[0].message.content
+            
+        # 구버전 API 호출 (폴백)
+        else:
+            import openai as openai_legacy
+            response = openai_legacy.ChatCompletion.create(
+                model=model_to_use,
+                messages=[
+                    {"role": "system", "content": "당신은 전문 미용사를 위한 헤어 기술 전문가입니다."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=400,
+                temperature=0.7
+            )
+            ai_response = response.choices[0].message.content
         
         # 응답 검증 및 포맷팅
         if len(ai_response.strip()) < 50:
@@ -696,7 +750,7 @@ def get_openai_response(message, recipe_type, recipes):
         
         # 폴백 응답 (더 전문적으로)
         return f"""
-        <strong>🦎 {recipe_type} 전문 레시피</strong><br><br>
+        <strong>H {recipe_type} 전문 레시피</strong><br><br>
         
         <strong>📋 시술 가이드:</strong><br>
         {'<br>'.join([f'• {recipe}' for recipe in recipes])}<br><br>
@@ -709,15 +763,6 @@ def get_openai_response(message, recipe_type, recipes):
         <strong>🔧 시스템 정보:</strong><br>
         API 연결 오류: {str(e)[:50]}...<br>
         기본 레시피로 제공됩니다.
-        """
-        
-    except KeyError as e:
-        logger.error(f"환경변수 오류: {e}")
-        return f"""
-        <strong>⚠️ 시스템 설정 오류</strong><br><br>
-        환경변수가 올바르게 설정되지 않았습니다.<br>
-        관리자에게 문의해주세요.<br><br>
-        <strong>오류:</strong> {str(e)}
         """
 
 @app.route('/')
@@ -763,7 +808,7 @@ def health():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'environment': os.getenv('ENVIRONMENT', 'development'),
-        'openai_available': bool(client),
+        'openai_available': bool(client or openai_api_key),
         'openai_model': openai_model,
         'claude_available': bool(claude_api_key and claude_api_key != '............'),
         'claude_model': claude_model if claude_api_key else None,
@@ -776,7 +821,7 @@ if __name__ == '__main__':
     
     print(f"🚀 헤어게이터 서버 최종 시작!")
     print(f"📍 포트: {port}")
-    print(f"🔑 OpenAI: {'✅ 연결됨' if client else '❌ 미연결'}")
+    print(f"🔑 OpenAI: {'✅ 연결됨' if (client or openai_api_key) else '❌ 미연결'}")
     print(f"🤖 모델: {openai_model or '기본 레시피 모드'}")
     print(f"🔵 Claude: {'✅ 준비됨' if claude_api_key and claude_api_key != '............' else '❌ 미설정'}")
     print(f"🌐 환경: {os.getenv('ENVIRONMENT', 'development')}")
